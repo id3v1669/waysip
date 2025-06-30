@@ -31,8 +31,10 @@
       default = nixpkgs.legacyPackages.${system}.callPackage ./nix/package.nix {fenix = fenix;};
     });
 
-    devShells = eachSystem (system: {
-      default = (pkgsFor system).callPackage ./nix/shell.nix {fenix = fenix;};
+    devShells = eachSystem (system: rec {
+      default = nightly;
+      nightly = (pkgsFor system).callPackage ./nix/shell-nightly.nix {fenix = fenix;};
+      stable = (pkgsFor system).callPackage ./nix/shell.nix {};
     });
 
     formatter.x86_64-linux = inputs.nixpkgs.legacyPackages.x86_64-linux.alejandra;
