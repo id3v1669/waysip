@@ -45,6 +45,8 @@ pub struct WaySip {
     style: Style,
     predefined_boxes: Option<Vec<state::BoxInfo>>,
     aspect_ratio: Option<(f64, f64)>,
+    #[cfg(feature = "benchmark")]
+    benchmark: bool,
 }
 
 impl WaySip {
@@ -103,8 +105,17 @@ impl WaySip {
         self
     }
 
+    #[cfg(feature = "benchmark")]
+    pub fn with_benchmark(mut self) -> Self {
+        self.benchmark = true;
+        self
+    }
+
     /// get the selected area
     pub fn get(self) -> Result<Option<state::AreaInfo>, WaySipError> {
+        #[cfg(feature = "benchmark")]
+        let benchmark = self.benchmark;
+
         match self.conn {
             Some(connection) => get_area_inner(
                 &connection,
@@ -112,6 +123,8 @@ impl WaySip {
                 self.style,
                 self.predefined_boxes,
                 self.aspect_ratio,
+                #[cfg(feature = "benchmark")]
+                benchmark,
             ),
             None => {
                 let connection = Connection::connect_to_env()
@@ -123,6 +136,8 @@ impl WaySip {
                     self.style,
                     self.predefined_boxes,
                     self.aspect_ratio,
+                    #[cfg(feature = "benchmark")]
+                    benchmark,
                 )
             }
         }
@@ -135,6 +150,7 @@ fn get_area_inner(
     style: Style,
     boxes: Option<Vec<state::BoxInfo>>,
     aspect_ratio: Option<(f64, f64)>,
+    #[cfg(feature = "benchmark")] benchmark: bool,
 ) -> Result<Option<state::AreaInfo>, WaySipError> {
     let (globals, _) = registry_queue_init::<state::WaysipState>(connection)
         .map_err(|e| WaySipError::InitFailed(e.to_string()))?;
@@ -263,8 +279,33 @@ fn get_area_inner(
         });
     }
     state.shm = Some(shm);
-
     state.qh = Some(qh);
+
+    #[cfg(feature = "benchmark")]
+    {
+        state.benchmark = benchmark;
+    }
+
+    #[cfg(feature = "benchmark")]
+    if state.benchmark {
+        let mut did_commit = false;
+        while state.running {
+            event_queue
+                .blocking_dispatch(&mut state)
+                .map_err(WaySipError::DispatchError)?;
+            if did_commit {
+                state.record_frame();
+            }
+            did_commit = state.try_commit();
+        }
+    } else {
+        while state.running {
+            event_queue
+                .blocking_dispatch(&mut state)
+                .map_err(WaySipError::DispatchError)?;
+        }
+    }
+    #[cfg(not(feature = "benchmark"))]
     while state.running {
         event_queue
             .blocking_dispatch(&mut state)

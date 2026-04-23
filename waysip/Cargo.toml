@@ -19,6 +19,7 @@ logger = ["dep:tracing-subscriber"]
 # Adds `--completions <SHELL>` for generating shell completion scripts.
 completions = ["dep:clap_complete", "dep:clap_complete_nushell"]
 frame-limit = ["libwaysip/frame-limit"]
+benchmark = ["libwaysip/benchmark"]
 
 [dependencies]
 clap = { version = "4.6", features = ["derive"] }

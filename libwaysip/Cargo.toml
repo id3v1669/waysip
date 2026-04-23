@@ -12,6 +12,7 @@ readme.workspace = true
 [features]
 default = ["frame-limit"]
 frame-limit = []
+benchmark = []
 
 [dependencies]
 tempfile = "3.27"

@@ -110,4 +110,9 @@ pub struct Cli {
     #[cfg(feature = "logger")]
     #[arg(long)]
     pub log_level: Option<Level>,
+
+    /// Use unconditional loop for rendering and report framerate data
+    #[cfg(feature = "benchmark")]
+    #[arg(long)]
+    pub bench: bool,
 }

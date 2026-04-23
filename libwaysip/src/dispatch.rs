@@ -224,6 +224,12 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                             dispatch_state.mouse_press_time = Some(std::time::Instant::now());
                         }
 
+                        #[cfg(feature = "benchmark")]
+                        if dispatch_state.benchmark {
+                            dispatch_state.bench_start = std::time::Instant::now();
+                            dispatch_state.frames_per_second.clear();
+                        }
+
                         if !dispatch_state.is_predefined_boxes() {
                             dispatch_state.set_start_pos(dispatch_state.current_pos);
                         }
@@ -288,7 +294,7 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                     }
                     _ => {}
                 }
-                dispatch_state.commit();
+                dispatch_state.try_commit();
             }
             wl_pointer::Event::Enter {
                 serial,
@@ -339,7 +345,7 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                     cursor_surface.commit();
                 }
 
-                dispatch_state.commit();
+                dispatch_state.try_commit();
             }
             wl_pointer::Event::Motion {
                 surface_x,
@@ -382,19 +388,12 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                     } else {
                         dispatch_state.end_pos = Some(dispatch_state.current_pos);
                     }
-
                     #[cfg(feature = "frame-limit")]
                     {
-                        let now = std::time::Instant::now();
-                        if now.duration_since(dispatch_state.last_redraw)
-                            >= std::time::Duration::from_millis(8)
-                        {
-                            dispatch_state.commit();
-                            dispatch_state.last_redraw = now;
-                        }
+                        dispatch_state.try_commit();
                     }
                     #[cfg(not(feature = "frame-limit"))]
-                    dispatch_state.commit();
+                    dispatch_state.try_commit();
                 } else if dispatch_state.is_predefined_boxes() {
                     let current_pos = dispatch_state.current_pos;
                     if let Some(box_info) = dispatch_state
@@ -421,17 +420,10 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                     }
                     #[cfg(feature = "frame-limit")]
                     {
-                        let now = std::time::Instant::now();
-                        if now.duration_since(dispatch_state.last_redraw)
-                            >= std::time::Duration::from_millis(20)
-                        // no need to redraw faster as boxes are not moving
-                        {
-                            dispatch_state.commit();
-                            dispatch_state.last_redraw = now;
-                        }
+                        dispatch_state.try_commit();
                     }
                     #[cfg(not(feature = "frame-limit"))]
-                    dispatch_state.commit();
+                    dispatch_state.try_commit();
                 }
             }
             _ => {}

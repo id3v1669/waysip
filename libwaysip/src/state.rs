@@ -183,6 +183,12 @@ pub struct WaysipState {
     pub(crate) aspect_ratio: Option<(f64, f64)>,
     #[cfg(feature = "frame-limit")]
     pub(crate) last_redraw: std::time::Instant,
+    #[cfg(feature = "benchmark")]
+    pub(crate) benchmark: bool,
+    #[cfg(feature = "benchmark")]
+    pub(crate) bench_start: std::time::Instant,
+    #[cfg(feature = "benchmark")]
+    pub(crate) frames_per_second: Vec<u32>,
     /// Tracks actual effective selection type for DimensionsOrOutput mode
     pub(crate) effective_selection_type: Option<SelectionType>,
     /// Time when mouse was pressed down
@@ -208,6 +214,12 @@ impl WaysipState {
             aspect_ratio: None,
             #[cfg(feature = "frame-limit")]
             last_redraw: std::time::Instant::now() - std::time::Duration::from_secs(1),
+            #[cfg(feature = "benchmark")]
+            benchmark: false,
+            #[cfg(feature = "benchmark")]
+            bench_start: std::time::Instant::now(),
+            #[cfg(feature = "benchmark")]
+            frames_per_second: Vec::new(),
             effective_selection_type: None,
             mouse_press_time: None,
             redraw_all: false,
@@ -323,6 +335,35 @@ impl WaysipState {
         }
     }
 
+    #[cfg(feature = "benchmark")]
+    pub(crate) fn try_commit(&mut self) -> bool {
+        #[cfg(feature = "frame-limit")]
+        {
+            let now = std::time::Instant::now();
+            if now.duration_since(self.last_redraw) >= std::time::Duration::from_millis(8) {
+                self.commit();
+                self.last_redraw = now;
+                return true;
+            }
+            return false;
+        }
+
+        #[cfg(not(feature = "frame-limit"))]
+        {
+            self.commit();
+            return true;
+        }
+    }
+
+    #[cfg(feature = "benchmark")]
+    pub(crate) fn record_frame(&mut self) {
+        let elapsed = self.bench_start.elapsed().as_secs() as usize;
+        if elapsed >= self.frames_per_second.len() {
+            self.frames_per_second.resize(elapsed + 1, 0);
+        }
+        self.frames_per_second[elapsed] += 1;
+    }
+
     /// redraw all surface
     pub fn redraw(&mut self) {
         for i in 0..self.wl_surfaces.len() {
@@ -410,6 +451,8 @@ impl WaysipState {
             },
             screen_info: output.get_screen_info(),
             effective_selection_type: self.effective_selection_type,
+            #[cfg(feature = "benchmark")]
+            frames_per_second: self.frames_per_second.clone(),
         })
     }
 }
@@ -481,6 +524,8 @@ pub struct AreaInfo {
     pub box_info: BoxInfo,
     pub screen_info: ScreenInfo,
     pub effective_selection_type: Option<SelectionType>,
+    #[cfg(feature = "benchmark")]
+    pub frames_per_second: Vec<u32>,
 }
 
 impl AreaInfo {
