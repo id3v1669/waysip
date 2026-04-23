@@ -383,13 +383,18 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                         dispatch_state.end_pos = Some(dispatch_state.current_pos);
                     }
 
-                    let now = std::time::Instant::now();
-                    if now.duration_since(dispatch_state.last_redraw)
-                        >= std::time::Duration::from_millis(8)
+                    #[cfg(feature = "frame-limit")]
                     {
-                        dispatch_state.commit();
-                        dispatch_state.last_redraw = now;
+                        let now = std::time::Instant::now();
+                        if now.duration_since(dispatch_state.last_redraw)
+                            >= std::time::Duration::from_millis(8)
+                        {
+                            dispatch_state.commit();
+                            dispatch_state.last_redraw = now;
+                        }
                     }
+                    #[cfg(not(feature = "frame-limit"))]
+                    dispatch_state.commit();
                 } else if dispatch_state.is_predefined_boxes() {
                     let current_pos = dispatch_state.current_pos;
                     if let Some(box_info) = dispatch_state
@@ -414,14 +419,19 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                             y: box_info.end_y,
                         });
                     }
-                    let now = std::time::Instant::now();
-                    if now.duration_since(dispatch_state.last_redraw)
-                        >= std::time::Duration::from_millis(20)
-                    // no need to redraw faster as boxes are not moving
+                    #[cfg(feature = "frame-limit")]
                     {
-                        dispatch_state.commit();
-                        dispatch_state.last_redraw = now;
+                        let now = std::time::Instant::now();
+                        if now.duration_since(dispatch_state.last_redraw)
+                            >= std::time::Duration::from_millis(20)
+                        // no need to redraw faster as boxes are not moving
+                        {
+                            dispatch_state.commit();
+                            dispatch_state.last_redraw = now;
+                        }
                     }
+                    #[cfg(not(feature = "frame-limit"))]
+                    dispatch_state.commit();
                 }
             }
             _ => {}

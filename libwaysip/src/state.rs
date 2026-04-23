@@ -181,6 +181,7 @@ pub struct WaysipState {
     pub(crate) qh: Option<QueueHandle<Self>>,
     pub(crate) predefined_boxes: Option<Vec<BoxInfo>>,
     pub(crate) aspect_ratio: Option<(f64, f64)>,
+    #[cfg(feature = "frame-limit")]
     pub(crate) last_redraw: std::time::Instant,
     /// Tracks actual effective selection type for DimensionsOrOutput mode
     pub(crate) effective_selection_type: Option<SelectionType>,
@@ -205,6 +206,7 @@ impl WaysipState {
             shm: None,
             predefined_boxes: None,
             aspect_ratio: None,
+            #[cfg(feature = "frame-limit")]
             last_redraw: std::time::Instant::now() - std::time::Duration::from_secs(1),
             effective_selection_type: None,
             mouse_press_time: None,

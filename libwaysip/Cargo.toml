@@ -9,6 +9,10 @@ repository.workspace = true
 keywords.workspace = true
 readme.workspace = true
 
+[features]
+default = ["frame-limit"]
+frame-limit = []
+
 [dependencies]
 tempfile = "3.27"
 wayland-client = "0.31"
