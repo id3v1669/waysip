@@ -225,12 +225,12 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                         }
 
                         #[cfg(feature = "benchmark")]
-                        if dispatch_state.benchmark
+                        if dispatch_state.bench_fn
                             && (dispatch_state.is_area()
                                 || dispatch_state.is_dimensions_or_output())
                         {
                             dispatch_state.bench_start = std::time::Instant::now();
-                            dispatch_state.frames_per_second.clear();
+                            dispatch_state.timestamps_fn.clear();
                         }
 
                         if !dispatch_state.is_predefined_boxes() {
@@ -391,11 +391,6 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                     } else {
                         dispatch_state.end_pos = Some(dispatch_state.current_pos);
                     }
-                    #[cfg(feature = "frame-limit")]
-                    {
-                        dispatch_state.try_commit();
-                    }
-                    #[cfg(not(feature = "frame-limit"))]
                     dispatch_state.try_commit();
                 } else if dispatch_state.is_predefined_boxes() {
                     let current_pos = dispatch_state.current_pos;
@@ -421,11 +416,6 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                             y: box_info.end_y,
                         });
                     }
-                    #[cfg(feature = "frame-limit")]
-                    {
-                        dispatch_state.try_commit();
-                    }
-                    #[cfg(not(feature = "frame-limit"))]
                     dispatch_state.try_commit();
                 }
             }
@@ -443,9 +433,16 @@ impl Dispatch<WlCallback, usize> for state::WaysipState {
         _conn: &Connection,
         _qhandle: &wayland_client::QueueHandle<Self>,
     ) {
-        if let wl_callback::Event::Done { .. } = event {
+        if let wl_callback::Event::Done {
+            callback_data: _callback_data,
+        } = event
+        {
             if *screen_index != state.current_screen {
                 return;
+            }
+            #[cfg(feature = "benchmark")]
+            if state.bench_total {
+                state.timestamps_total.push(_callback_data);
             }
             state.redraw();
         }

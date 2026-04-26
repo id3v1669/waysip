@@ -184,11 +184,15 @@ pub struct WaysipState {
     #[cfg(feature = "frame-limit")]
     pub(crate) last_redraw: std::time::Instant,
     #[cfg(feature = "benchmark")]
-    pub(crate) benchmark: bool,
+    pub(crate) bench_fn: bool,
+    #[cfg(feature = "benchmark")]
+    pub(crate) bench_total: bool,
     #[cfg(feature = "benchmark")]
     pub(crate) bench_start: std::time::Instant,
     #[cfg(feature = "benchmark")]
-    pub(crate) frames_per_second: Vec<u32>,
+    pub(crate) timestamps_fn: Vec<u32>,
+    #[cfg(feature = "benchmark")]
+    pub(crate) timestamps_total: Vec<u32>,
     /// Tracks actual effective selection type for DimensionsOrOutput mode
     pub(crate) effective_selection_type: Option<SelectionType>,
     /// Time when mouse was pressed down
@@ -215,11 +219,15 @@ impl WaysipState {
             #[cfg(feature = "frame-limit")]
             last_redraw: std::time::Instant::now() - std::time::Duration::from_secs(1),
             #[cfg(feature = "benchmark")]
-            benchmark: false,
+            bench_fn: false,
+            #[cfg(feature = "benchmark")]
+            bench_total: false,
             #[cfg(feature = "benchmark")]
             bench_start: std::time::Instant::now(),
             #[cfg(feature = "benchmark")]
-            frames_per_second: Vec::new(),
+            timestamps_fn: Vec::new(),
+            #[cfg(feature = "benchmark")]
+            timestamps_total: Vec::new(),
             effective_selection_type: None,
             mouse_press_time: None,
             redraw_all: false,
@@ -356,11 +364,8 @@ impl WaysipState {
 
     #[cfg(feature = "benchmark")]
     pub(crate) fn record_frame(&mut self) {
-        let elapsed = self.bench_start.elapsed().as_secs() as usize;
-        if elapsed >= self.frames_per_second.len() {
-            self.frames_per_second.resize(elapsed + 1, 0);
-        }
-        self.frames_per_second[elapsed] += 1;
+        self.timestamps_fn
+            .push(self.bench_start.elapsed().as_millis() as u32);
     }
 
     /// redraw all surface
@@ -451,7 +456,9 @@ impl WaysipState {
             screen_info: output.get_screen_info(),
             effective_selection_type: self.effective_selection_type,
             #[cfg(feature = "benchmark")]
-            frames_per_second: self.frames_per_second.clone(),
+            timestamps_fn: self.timestamps_fn.clone(),
+            #[cfg(feature = "benchmark")]
+            timestamps_total: self.timestamps_total.clone(),
         })
     }
 }
@@ -524,7 +531,9 @@ pub struct AreaInfo {
     pub screen_info: ScreenInfo,
     pub effective_selection_type: Option<SelectionType>,
     #[cfg(feature = "benchmark")]
-    pub frames_per_second: Vec<u32>,
+    pub timestamps_fn: Vec<u32>,
+    #[cfg(feature = "benchmark")]
+    pub timestamps_total: Vec<u32>,
 }
 
 impl AreaInfo {
