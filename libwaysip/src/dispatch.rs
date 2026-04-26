@@ -225,7 +225,10 @@ impl Dispatch<wl_pointer::WlPointer, ()> for state::WaysipState {
                         }
 
                         #[cfg(feature = "benchmark")]
-                        if dispatch_state.benchmark {
+                        if dispatch_state.benchmark
+                            && (dispatch_state.is_area()
+                                || dispatch_state.is_dimensions_or_output())
+                        {
                             dispatch_state.bench_start = std::time::Instant::now();
                             dispatch_state.frames_per_second.clear();
                         }

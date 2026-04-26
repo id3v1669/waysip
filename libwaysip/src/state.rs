@@ -335,7 +335,6 @@ impl WaysipState {
         }
     }
 
-    #[cfg(feature = "benchmark")]
     pub(crate) fn try_commit(&mut self) -> bool {
         #[cfg(feature = "frame-limit")]
         {
@@ -345,13 +344,13 @@ impl WaysipState {
                 self.last_redraw = now;
                 return true;
             }
-            return false;
+            false
         }
 
         #[cfg(not(feature = "frame-limit"))]
         {
             self.commit();
-            return true;
+            true
         }
     }
 

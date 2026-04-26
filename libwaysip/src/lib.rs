@@ -293,7 +293,8 @@ fn get_area_inner(
             event_queue
                 .blocking_dispatch(&mut state)
                 .map_err(WaySipError::DispatchError)?;
-            if did_commit {
+            let needs_drag = state.is_area() || state.is_dimensions_or_output();
+            if did_commit && (!needs_drag || state.start_pos.is_some()) {
                 state.record_frame();
             }
             did_commit = state.try_commit();
